@@ -213,19 +213,25 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // ── Serve HTML remote ──────────────────────────────────────────────────
-  if (url === '/' || url === '/index.html') {
-    fs.readFile(HTML, (err, data) => {
+  // ── Serve static files ────────────────────────────────────────────────
+  const STATIC = {
+    '/':                  { file: 'panasonic_remote.html', mime: 'text/html; charset=utf-8',     cache: 'no-cache' },
+    '/index.html':        { file: 'panasonic_remote.html', mime: 'text/html; charset=utf-8',     cache: 'no-cache' },
+    '/manifest.json':     { file: 'manifest.json',         mime: 'application/manifest+json',    cache: 'no-cache' },
+    '/sw.js':             { file: 'sw.js',                 mime: 'application/javascript',       cache: 'no-cache' },
+    '/icon.svg':          { file: 'icon.svg',              mime: 'image/svg+xml',                cache: 'public, max-age=86400' },
+    '/icon-maskable.svg': { file: 'icon-maskable.svg',     mime: 'image/svg+xml',                cache: 'public, max-age=86400' },
+  };
+
+  if (STATIC[url] && method === 'GET') {
+    const { file, mime, cache } = STATIC[url];
+    fs.readFile(path.join(__dirname, file), (err, data) => {
       if (err) {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('panasonic_remote.html not found — make sure both files are in the same folder');
+        res.end(`${file} not found`);
         return;
       }
-      res.writeHead(200, {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Content-Length': data.length,
-        'Cache-Control': 'no-cache',
-      });
+      res.writeHead(200, { 'Content-Type': mime, 'Content-Length': data.length, 'Cache-Control': cache });
       res.end(data);
     });
     return;
