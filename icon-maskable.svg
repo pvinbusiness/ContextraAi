@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Solid background (maskable: no rounded corners, fills entire square) -->
+  <rect width="512" height="512" fill="#0d1117"/>
+
+  <!-- Remote body — shifted slightly inward for maskable safe zone -->
+  <rect x="168" y="74" width="176" height="364" rx="60" fill="#1c1c1e" stroke="#2c2c2e" stroke-width="3"/>
+
+  <!-- Power button -->
+  <circle cx="256" cy="158" r="34" fill="#ff3b30"/>
+  <rect x="250" y="138" width="12" height="24" rx="6" fill="white"/>
+  <path d="M228 152 A34 34 0 1 0 284 152" stroke="white" stroke-width="8" stroke-linecap="round" fill="none"/>
+
+  <!-- D-pad -->
+  <circle cx="256" cy="294" r="58" fill="#252528"/>
+  <polygon points="256,248 244,266 268,266" fill="#48484a"/>
+  <polygon points="256,340 244,322 268,322" fill="#48484a"/>
+  <polygon points="208,294 226,282 226,306" fill="#48484a"/>
+  <polygon points="304,294 286,282 286,306" fill="#48484a"/>
+  <circle cx="256" cy="294" r="24" fill="#0062c0"/>
+
+  <!-- Bottom buttons -->
+  <rect x="188" y="388" width="38" height="18" rx="6" fill="#252528"/>
+  <rect x="237" y="388" width="38" height="18" rx="6" fill="#252528"/>
+  <rect x="286" y="388" width="38" height="18" rx="6" fill="#252528"/>
+</svg>

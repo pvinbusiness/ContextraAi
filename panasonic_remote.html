@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0062c0">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <title>Panasonic TV Remote</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+    :root{
+      --bg:#0d1117;
+      --remote:#1c1c1e;
+      --surface:#2c2c2e;
+      --surface2:#3a3a3c;
+      --btn:#252528;
+      --btn-hover:#303035;
+      --btn-active:#3e3e43;
+      --text:#f5f5f7;
+      --muted:#8e8e93;
+      --blue:#0062c0;
+      --blue-dark:#004a9f;
+      --blue-light:#2196f3;
+      --red:#ff3b30;
+      --red-dark:#c62828;
+      --green:#30d158;
+      --yellow:#ffd60a;
+      --border:#38383a;
+      --ok-btn:#0062c0;
+    }
+
+    html,body{
+      background:var(--bg);
+      color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
+      min-height:100dvh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      overscroll-behavior:none;
+    }
+
+    /* ── Header ── */
+    .header{
+      width:100%;
+      max-width:420px;
+      padding:env(safe-area-inset-top, 16px) 20px 8px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      position:sticky;
+      top:0;
+      background:var(--bg);
+      z-index:10;
+    }
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand-name{font-size:12px;letter-spacing:3px;font-weight:700;color:var(--blue)}
+    .brand-sub{font-size:11px;color:var(--muted);letter-spacing:1px}
+    .status-wrap{display:flex;align-items:center;gap:6px}
+    .status-dot{width:7px;height:7px;border-radius:50%;background:var(--red);transition:background .4s}
+    .status-dot.on{background:var(--green)}
+    .status-txt{font-size:11px;color:var(--muted)}
+    .icon-btn{
+      background:var(--surface);
+      border:none;color:var(--text);
+      width:36px;height:36px;border-radius:50%;
+      cursor:pointer;font-size:17px;
+      display:flex;align-items:center;justify-content:center;
+      transition:background .15s;
+    }
+    .icon-btn:active{background:var(--surface2)}
+
+    /* ── Remote body ── */
+    .remote{
+      width:100%;
+      max-width:420px;
+      padding:8px 16px calc(env(safe-area-inset-bottom, 0px) + 24px);
+    }
+
+    /* ── Base button ── */
+    .btn{
+      background:var(--btn);
+      border:1px solid var(--border);
+      color:var(--text);
+      border-radius:14px;
+      cursor:pointer;
+      font-size:14px;
+      font-weight:500;
+      padding:13px 8px;
+      text-align:center;
+      transition:background .08s, transform .08s, box-shadow .08s;
+      user-select:none;
+      touch-action:manipulation;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      line-height:1;
+      position:relative;
+      overflow:hidden;
+      min-height:52px;
+    }
+    .btn:hover{background:var(--btn-hover)}
+    .btn:active{background:var(--btn-active);transform:scale(0.94);box-shadow:0 0 0 2px rgba(255,255,255,.06)}
+    .btn .ico{font-size:20px;line-height:1}
+    .btn .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600}
+
+    /* ── Divider ── */
+    .divider{height:1px;background:var(--border);margin:14px 0}
+
+    /* ── Section label ── */
+    .sec-lbl{
+      font-size:10px;color:var(--muted);
+      text-transform:uppercase;letter-spacing:1.2px;
+      font-weight:600;text-align:center;
+      margin-bottom:10px;
+    }
+
+    /* ── Power row ── */
+    .power-row{
+      display:grid;
+      grid-template-columns:64px 1fr 1fr 1fr;
+      gap:8px;
+      margin-bottom:14px;
+      align-items:stretch;
+    }
+    .btn-power{
+      background:var(--red);
+      border-color:var(--red-dark);
+      border-radius:50%;
+      width:64px;height:64px;
+      min-height:64px;
+      padding:0;
+      font-size:26px;
+      box-shadow:0 4px 20px rgba(255,59,48,.35);
+    }
+    .btn-power:active{background:var(--red-dark);box-shadow:none}
+    .btn-util{padding:10px 6px;gap:3px}
+
+    /* ── Vol / Channel ── */
+    .vol-ch-grid{
+      display:grid;
+      grid-template-columns:1fr 28px 1fr;
+      gap:8px;
+      align-items:center;
+      margin-bottom:14px;
+    }
+    .vol-col,.ch-col{display:flex;flex-direction:column;gap:7px}
+    .col-lbl{
+      text-align:center;font-size:10px;color:var(--muted);
+      text-transform:uppercase;letter-spacing:1px;font-weight:600;
+      margin-bottom:2px;
+    }
+    .btn-vol-up,.btn-ch-up{font-size:20px;padding:16px 8px}
+    .btn-vol-dn,.btn-ch-dn{font-size:20px;padding:16px 8px}
+    .btn-mute,.btn-last{font-size:13px;padding:11px 8px}
+    .col-sep{width:1px;background:var(--border);align-self:stretch;margin:10px 0}
+
+    /* ── D-pad ── */
+    .dpad-wrap{
+      display:flex;
+      justify-content:center;
+      margin-bottom:14px;
+    }
+    .dpad{
+      display:grid;
+      grid-template-columns:repeat(3,68px);
+      grid-template-rows:repeat(3,56px);
+      gap:7px;
+    }
+    .btn-dir{border-radius:14px;font-size:22px;padding:0}
+    .btn-ok{
+      background:var(--ok-btn);
+      border-color:var(--blue-dark);
+      border-radius:14px;
+      font-size:15px;
+      font-weight:700;
+      letter-spacing:.5px;
+      padding:0;
+      box-shadow:0 4px 18px rgba(0,98,192,.4);
+    }
+    .btn-ok:active{background:var(--blue-dark);box-shadow:none}
+    .dpad-gap{background:transparent;border:none;cursor:default;pointer-events:none}
+    .dpad-gap:active{transform:none}
+
+    /* ── Nav row ── */
+    .nav-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+    .btn-nav{padding:14px 8px;gap:5px}
+
+    /* ── Number pad ── */
+    .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+    .btn-num{font-size:22px;font-weight:600;padding:16px 8px}
+    .btn-num .sub{font-size:9px;color:var(--muted);font-weight:400;letter-spacing:.5px;margin-top:1px}
+    .btn-dash{font-size:16px}
+    .btn-exit{background:var(--surface)}
+
+    /* ── Media ── */
+    .media-row{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:14px}
+    .btn-media{padding:14px 4px;border-radius:12px;font-size:20px}
+    .btn-rec{color:#ff453a}
+
+    /* ── Smart ── */
+    .smart-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+    .btn-smart{padding:14px 8px;border-radius:16px;font-size:13px;font-weight:600}
+    .btn-netflix{background:#141414;border-color:#e50914;color:#e50914}
+    .btn-netflix:active{background:#1c1c1c}
+    .btn-netflix .ico{font-size:22px;color:#e50914}
+
+    /* ── Color row ── */
+    .color-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .btn-col-r{background:#c62828;border-color:#b71c1c}
+    .btn-col-r:active{background:#b71c1c}
+    .btn-col-g{background:#2e7d32;border-color:#1b5e20}
+    .btn-col-g:active{background:#1b5e20}
+    .btn-col-y{background:#f9a825;border-color:#f57f17;color:#111}
+    .btn-col-y:active{background:#f57f17}
+    .btn-col-b{background:#1565c0;border-color:#0d47a1}
+    .btn-col-b:active{background:#0d47a1}
+    .btn-color{font-size:18px;padding:12px}
+
+    /* ── Toast ── */
+    .toast{
+      position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);
+      left:50%;transform:translateX(-50%) translateY(80px);
+      background:rgba(50,50,55,.96);
+      color:#fff;
+      padding:9px 20px;
+      border-radius:20px;
+      font-size:13px;font-weight:500;
+      transition:transform .25s cubic-bezier(.34,1.56,.64,1), opacity .25s;
+      z-index:200;pointer-events:none;
+      white-space:nowrap;
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      opacity:0;
+    }
+    .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+    /* ── Settings modal ── */
+    .overlay{
+      position:fixed;inset:0;
+      background:rgba(0,0,0,.75);
+      display:flex;align-items:flex-end;justify-content:center;
+      z-index:100;
+      opacity:0;pointer-events:none;
+      transition:opacity .25s;
+      backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    }
+    .overlay.open{opacity:1;pointer-events:auto}
+    .modal{
+      background:#1c1c1e;
+      border-radius:24px 24px 0 0;
+      width:100%;max-width:480px;
+      padding:16px 24px calc(env(safe-area-inset-bottom,0px) + 32px);
+      transform:translateY(100%);
+      transition:transform .3s cubic-bezier(.34,1.2,.64,1);
+    }
+    .overlay.open .modal{transform:translateY(0)}
+    .drag-handle{width:40px;height:4px;background:#48484a;border-radius:2px;margin:0 auto 20px}
+    .modal-title{font-size:19px;font-weight:700;margin-bottom:6px}
+    .modal-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+    .form-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600;margin-bottom:6px;display:block}
+    .form-input{
+      width:100%;background:var(--surface);
+      border:1px solid var(--border);color:var(--text);
+      padding:13px 16px;border-radius:13px;
+      font-size:16px;outline:none;
+      transition:border-color .2s;
+      -webkit-appearance:none;
+    }
+    .form-input:focus{border-color:var(--blue-light)}
+    .form-hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5}
+    .form-group{margin-bottom:16px}
+    .toggle-row{
+      display:flex;align-items:center;justify-content:space-between;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:13px;padding:13px 16px;
+      margin-bottom:8px;
+    }
+    .toggle-info{display:flex;flex-direction:column;gap:3px;flex:1;margin-right:12px}
+    .toggle-lbl{font-size:14px;font-weight:500}
+    .toggle-desc{font-size:11px;color:var(--muted)}
+    .switch{
+      position:relative;width:51px;height:31px;flex-shrink:0;
+    }
+    .switch input{opacity:0;width:0;height:0}
+    .switch-track{
+      position:absolute;inset:0;background:#3a3a3c;
+      border-radius:31px;transition:background .2s;cursor:pointer;
+    }
+    .switch input:checked + .switch-track{background:#30a14e}
+    .switch-thumb{
+      position:absolute;top:2px;left:2px;
+      width:27px;height:27px;background:#fff;
+      border-radius:50%;transition:transform .2s;
+      pointer-events:none;
+      box-shadow:0 2px 6px rgba(0,0,0,.4);
+    }
+    .switch input:checked ~ .switch-thumb{transform:translateX(20px)}
+    .btn-save{
+      width:100%;background:var(--blue);color:#fff;
+      border:none;padding:15px;border-radius:14px;
+      font-size:16px;font-weight:600;cursor:pointer;
+      margin-top:8px;transition:background .15s;
+    }
+    .btn-save:active{background:var(--blue-dark)}
+    .btn-test{
+      width:100%;background:transparent;color:var(--muted);
+      border:1px solid var(--border);padding:12px;
+      border-radius:14px;font-size:14px;cursor:pointer;
+      margin-top:8px;transition:background .15s;
+    }
+    .btn-test:active{background:var(--surface)}
+    .info-card{
+      background:rgba(0,98,192,.1);
+      border:1px solid rgba(0,98,192,.25);
+      border-radius:14px;padding:14px;
+      margin-top:16px;font-size:12px;
+      color:#90caf9;line-height:1.6;
+    }
+    .info-card strong{color:#bbdefb}
+
+    /* ── Scan UI ── */
+    .btn-scan{
+      width:100%;background:var(--surface);
+      color:var(--text);border:1px solid var(--border);
+      padding:13px;border-radius:13px;
+      font-size:14px;font-weight:500;
+      cursor:pointer;margin-top:8px;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      transition:background .15s;
+    }
+    .btn-scan:active{background:var(--surface2)}
+    .btn-scan:disabled{opacity:.5;cursor:not-allowed}
+    .scan-results{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+    .tv-item{
+      display:flex;align-items:center;gap:12px;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:13px;padding:12px 14px;
+      cursor:pointer;width:100%;text-align:left;
+      transition:background .12s;
+    }
+    .tv-item:active{background:var(--surface2)}
+    .tv-item-icon{font-size:22px;flex-shrink:0}
+    .tv-item-info{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+    .tv-item-name{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tv-item-ip{font-size:11px;color:var(--muted);font-family:monospace}
+    .tv-item-arrow{font-size:20px;color:var(--muted);flex-shrink:0}
+    .scan-msg{
+      font-size:12px;color:var(--muted);
+      text-align:center;padding:12px;
+      background:var(--surface);border-radius:12px;
+      border:1px solid var(--border);
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{display:inline-block;animation:spin 1s linear infinite}
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <div class="brand">
+    <span class="brand-name">PANASONIC</span>
+    <span class="brand-sub">VIERA Remote</span>
+  </div>
+  <div class="status-wrap">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-txt" id="statusTxt">Offline</span>
+  </div>
+  <button class="icon-btn" onclick="openSettings()" aria-label="Settings">⚙️</button>
+</header>
+
+<!-- ── Remote ── -->
+<main class="remote">
+
+  <!-- Power + Utilities -->
+  <div class="power-row">
+    <button class="btn btn-power" onclick="cmd('NRC_POWER-ONOFF')" aria-label="Power">⏻</button>
+    <button class="btn btn-util" onclick="cmd('NRC_CHG_INPUT-ONOFF')">
+      <span class="ico">⬛</span><span class="lbl">Input</span>
+    </button>
+    <button class="btn btn-util" onclick="cmd('NRC_EPG-ONOFF')">
+      <span class="ico">📋</span><span class="lbl">Guide</span>
+    </button>
+    <button class="btn btn-util" onclick="cmd('NRC_INFO-ONOFF')">
+      <span class="ico">ℹ️</span><span class="lbl">Info</span>
+    </button>
+  </div>
+
+  <!-- Volume & Channel -->
+  <div class="vol-ch-grid">
+    <div class="vol-col">
+      <div class="col-lbl">Volume</div>
+      <button class="btn btn-vol-up" onclick="cmd('NRC_VOLUP-ONOFF')">
+        <span class="ico">🔊</span><span class="lbl">Vol +</span>
+      </button>
+      <button class="btn btn-mute" onclick="cmd('NRC_MUTE-ONOFF')">
+        <span>🔇 Mute</span>
+      </button>
+      <button class="btn btn-vol-dn" onclick="cmd('NRC_VOLDOWN-ONOFF')">
+        <span class="ico">🔉</span><span class="lbl">Vol −</span>
+      </button>
+    </div>
+
+    <div class="col-sep"></div>
+
+    <div class="ch-col">
+      <div class="col-lbl">Channel</div>
+      <button class="btn btn-ch-up" onclick="cmd('NRC_CH_UP-ONOFF')">
+        <span class="ico">▲</span><span class="lbl">CH +</span>
+      </button>
+      <button class="btn btn-last" onclick="cmd('NRC_LAST-ONOFF')">
+        <span>↩ Last</span>
+      </button>
+      <button class="btn btn-ch-dn" onclick="cmd('NRC_CH_DOWN-ONOFF')">
+        <span class="ico">▼</span><span class="lbl">CH −</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- D-pad -->
+  <div class="dpad-wrap">
+    <div class="dpad" role="group" aria-label="Navigation">
+      <div class="btn dpad-gap"></div>
+      <button class="btn btn-dir" onclick="cmd('NRC_UP-ONOFF')" aria-label="Up">▲</button>
+      <div class="btn dpad-gap"></div>
+
+      <button class="btn btn-dir" onclick="cmd('NRC_LEFT-ONOFF')" aria-label="Left">◄</button>
+      <button class="btn btn-ok" onclick="cmd('NRC_ENTER-ONOFF')">OK</button>
+      <button class="btn btn-dir" onclick="cmd('NRC_RIGHT-ONOFF')" aria-label="Right">►</button>
+
+      <div class="btn dpad-gap"></div>
+      <button class="btn btn-dir" onclick="cmd('NRC_DOWN-ONOFF')" aria-label="Down">▼</button>
+      <div class="btn dpad-gap"></div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav-row">
+    <button class="btn btn-nav" onclick="cmd('NRC_RETURN-ONOFF')">
+      <span class="ico">←</span><span class="lbl">Back</span>
+    </button>
+    <button class="btn btn-nav" onclick="cmd('NRC_HOME-ONOFF')">
+      <span class="ico">⌂</span><span class="lbl">Home</span>
+    </button>
+    <button class="btn btn-nav" onclick="cmd('NRC_MENU-ONOFF')">
+      <span class="ico">☰</span><span class="lbl">Menu</span>
+    </button>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Number pad -->
+  <div class="sec-lbl">Channels</div>
+  <div class="numpad">
+    <button class="btn btn-num" onclick="cmd('NRC_D1-ONOFF')">1</button>
+    <button class="btn btn-num" onclick="cmd('NRC_D2-ONOFF')">2<span class="sub">ABC</span></button>
+    <button class="btn btn-num" onclick="cmd('NRC_D3-ONOFF')">3<span class="sub">DEF</span></button>
+    <button class="btn btn-num" onclick="cmd('NRC_D4-ONOFF')">4<span class="sub">GHI</span></button>
+    <button class="btn btn-num" onclick="cmd('NRC_D5-ONOFF')">5<span class="sub">JKL</span></button>
+    <button class="btn btn-num" onclick="cmd('NRC_D6-ONOFF')">6<span class="sub">MNO</span></button>
+    <button class="btn btn-num" onclick="cmd('NRC_D7-ONOFF')">7<span class="sub">PQRS</span></button>
+    <button class="btn btn-num" onclick="cmd('NRC_D8-ONOFF')">8<span class="sub">TUV</span></button>
+    <button class="btn btn-num" onclick="cmd('NRC_D9-ONOFF')">9<span class="sub">WXYZ</span></button>
+    <button class="btn btn-num btn-dash" onclick="cmd('NRC_SUBCODE_00-ONOFF')">-/--</button>
+    <button class="btn btn-num" onclick="cmd('NRC_D0-ONOFF')">0</button>
+    <button class="btn btn-num btn-exit" onclick="cmd('NRC_CANCEL-ONOFF')">
+      <span class="ico" style="font-size:16px">✕</span><span class="lbl">Exit</span>
+    </button>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Media controls -->
+  <div class="sec-lbl">Playback</div>
+  <div class="media-row">
+    <button class="btn btn-media" onclick="cmd('NRC_REW-ONOFF')" aria-label="Rewind">⏮</button>
+    <button class="btn btn-media" onclick="cmd('NRC_PLAY-ONOFF')" aria-label="Play">▶</button>
+    <button class="btn btn-media" onclick="cmd('NRC_PAUSE-ONOFF')" aria-label="Pause">⏸</button>
+    <button class="btn btn-media" onclick="cmd('NRC_FF-ONOFF')" aria-label="Fast Forward">⏭</button>
+    <button class="btn btn-media" onclick="cmd('NRC_STOP-ONOFF')" aria-label="Stop">⏹</button>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Smart buttons -->
+  <div class="sec-lbl">Apps</div>
+  <div class="smart-row">
+    <button class="btn btn-smart btn-netflix" onclick="cmd('NRC_NETFLIX-ONOFF')">
+      <span class="ico">📺</span> Netflix
+    </button>
+    <button class="btn btn-smart" onclick="cmd('NRC_APPS-ONOFF')">
+      <span class="ico">🌐</span> All Apps
+    </button>
+  </div>
+
+  <!-- Color buttons -->
+  <div class="color-row">
+    <button class="btn btn-color btn-col-r" onclick="cmd('NRC_RED-ONOFF')" aria-label="Red">⬤</button>
+    <button class="btn btn-color btn-col-g" onclick="cmd('NRC_GREEN-ONOFF')" aria-label="Green">⬤</button>
+    <button class="btn btn-color btn-col-y" onclick="cmd('NRC_YELLOW-ONOFF')" aria-label="Yellow">⬤</button>
+    <button class="btn btn-color btn-col-b" onclick="cmd('NRC_BLUE-ONOFF')" aria-label="Blue">⬤</button>
+  </div>
+
+</main>
+
+<!-- ── Settings overlay ── -->
+<div class="overlay" id="overlay" onclick="overlayClick(event)">
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="drag-handle"></div>
+    <div class="modal-title" id="modalTitle">TV Settings</div>
+    <div class="modal-sub">Connect to your Panasonic VIERA TV</div>
+
+    <div class="form-group">
+      <label class="form-lbl" for="tvIp">TV IP Address</label>
+      <input class="form-input" type="text" id="tvIp"
+        placeholder="192.168.1.100"
+        inputmode="decimal"
+        autocomplete="off"
+        autocorrect="off">
+      <div class="form-hint">Find it in your TV: Settings → Network → Network Status</div>
+    </div>
+
+    <button class="btn-scan" id="scanBtn" onclick="scanForTVs()">
+      🔍 Scan Network for TVs
+    </button>
+    <div class="scan-results" id="scanResults"></div>
+
+    <div class="toggle-row">
+      <div class="toggle-info">
+        <span class="toggle-lbl">Server Mode</span>
+        <span class="toggle-desc">Use when direct mode is blocked by browser security</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="serverMode">
+        <div class="switch-track"></div>
+        <div class="switch-thumb"></div>
+      </label>
+    </div>
+    <div class="form-hint" style="margin-bottom:16px">
+      Server mode requires running <code style="background:var(--surface);padding:1px 5px;border-radius:4px;font-size:11px">node panasonic_server.js</code> on a computer in your home network, then browse to that computer's IP on port 8080.
+    </div>
+
+    <button class="btn-save" onclick="saveSettings()">Save &amp; Close</button>
+    <button class="btn-test" onclick="testConn()">Test Connection</button>
+
+    <div class="info-card">
+      <strong>📱 Share with family:</strong> Once the server is running, share
+      <code style="background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px">http://YOUR-PC-IP:8080</code>
+      with anyone on your home WiFi — no app install needed!
+      <br><br>
+      <strong>💡 Tip:</strong> Assign a fixed IP to your TV in your router's DHCP settings so the address never changes.
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ── Settings ──────────────────────────────────────────────────────────────
+const S = {
+  ip:         localStorage.getItem('tv_ip')     || '',
+  serverMode: localStorage.getItem('tv_server') === 'true',
+};
+
+function loadSettings() {
+  document.getElementById('tvIp').value      = S.ip;
+  document.getElementById('serverMode').checked = S.serverMode;
+}
+
+function saveSettings() {
+  S.ip         = document.getElementById('tvIp').value.trim();
+  S.serverMode = document.getElementById('serverMode').checked;
+  localStorage.setItem('tv_ip',     S.ip);
+  localStorage.setItem('tv_server', S.serverMode);
+  closeSettings();
+  toast('Settings saved ✓');
+}
+
+// ── Status indicator ────────────────────────────────────────────────────
+function setStatus(connected) {
+  document.getElementById('statusDot').className = 'status-dot' + (connected ? ' on' : '');
+  document.getElementById('statusTxt').textContent = connected ? 'Connected' : 'Offline';
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg, ms = 1800) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+// ── SOAP builder ─────────────────────────────────────────────────────────
+function soap(command) {
+  return `<?xml version="1.0" encoding="utf-8"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><u:X_SendKey xmlns:u="urn:panasonic-com:service:p00NetworkControl:1"><X_KeyEvent>${command}</X_KeyEvent></u:X_SendKey></s:Body></s:Envelope>`;
+}
+
+// ── Send command ─────────────────────────────────────────────────────────
+async function cmd(command) {
+  if (!S.ip) { openSettings(); toast('Set your TV IP address first', 2500); return; }
+
+  toast(cmdLabel(command));
+
+  if (S.serverMode) {
+    // Via local proxy server (reliable, no CORS issues)
+    try {
+      const r = await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip: S.ip, command }),
+        signal: AbortSignal.timeout(6000),
+      });
+      setStatus(r.ok);
+      if (!r.ok) toast('TV not responding — check IP', 3000);
+    } catch {
+      setStatus(false);
+      toast('Server offline — run panasonic_server.js', 3000);
+    }
+    return;
+  }
+
+  // Direct mode — XHR to TV (works if TV allows CORS, or on some browsers)
+  const url = `http://${S.ip}:55000/nrc/control_0`;
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/xml; charset=utf-8',
+        'SOAPAction': '"urn:panasonic-com:service:p00NetworkControl:1#X_SendKey"',
+      },
+      body: soap(command),
+      mode: 'no-cors',
+      signal: AbortSignal.timeout(5000),
+    });
+    // no-cors always resolves (opaque response) — assume sent
+    setStatus(true);
+  } catch {
+    setStatus(false);
+    toast('Direct mode blocked — try Server Mode', 3000);
+  }
+}
+
+// ── Friendly command labels ───────────────────────────────────────────────
+const LABELS = {
+  'NRC_POWER-ONOFF':   '⏻ Power',
+  'NRC_VOLUP-ONOFF':   '🔊 Volume Up',
+  'NRC_VOLDOWN-ONOFF': '🔉 Volume Down',
+  'NRC_MUTE-ONOFF':    '🔇 Mute',
+  'NRC_CH_UP-ONOFF':   '▲ Channel Up',
+  'NRC_CH_DOWN-ONOFF': '▼ Channel Down',
+  'NRC_LAST-ONOFF':    '↩ Last Channel',
+  'NRC_UP-ONOFF':      '▲ Up',
+  'NRC_DOWN-ONOFF':    '▼ Down',
+  'NRC_LEFT-ONOFF':    '◄ Left',
+  'NRC_RIGHT-ONOFF':   '► Right',
+  'NRC_ENTER-ONOFF':   '✓ OK',
+  'NRC_RETURN-ONOFF':  '← Back',
+  'NRC_HOME-ONOFF':    '⌂ Home',
+  'NRC_MENU-ONOFF':    '☰ Menu',
+  'NRC_INFO-ONOFF':    'ℹ Info',
+  'NRC_EPG-ONOFF':     '📋 Guide',
+  'NRC_CHG_INPUT-ONOFF':'⬛ Input',
+  'NRC_NETFLIX-ONOFF': '📺 Netflix',
+  'NRC_APPS-ONOFF':    '🌐 Apps',
+  'NRC_CANCEL-ONOFF':  '✕ Exit',
+  'NRC_REW-ONOFF':     '⏮ Rewind',
+  'NRC_PLAY-ONOFF':    '▶ Play',
+  'NRC_PAUSE-ONOFF':   '⏸ Pause',
+  'NRC_FF-ONOFF':      '⏭ Fast Forward',
+  'NRC_STOP-ONOFF':    '⏹ Stop',
+  'NRC_RED-ONOFF':     '🔴 Red',
+  'NRC_GREEN-ONOFF':   '🟢 Green',
+  'NRC_YELLOW-ONOFF':  '🟡 Yellow',
+  'NRC_BLUE-ONOFF':    '🔵 Blue',
+};
+for (let i = 0; i <= 9; i++) LABELS[`NRC_D${i}-ONOFF`] = `${i}`;
+
+function cmdLabel(c) {
+  return LABELS[c] || c.replace('NRC_','').replace('-ONOFF','');
+}
+
+// ── Test connection ───────────────────────────────────────────────────────
+async function testConn() {
+  const ip = document.getElementById('tvIp').value.trim();
+  if (!ip) { toast('Enter an IP address first'); return; }
+  toast('Testing…', 4000);
+
+  if (document.getElementById('serverMode').checked) {
+    try {
+      const r = await fetch('/api/ping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip }),
+        signal: AbortSignal.timeout(5000),
+      });
+      const d = await r.json();
+      toast(d.ok ? '✅ TV found!' : '❌ TV not found — check IP', 3500);
+      setStatus(d.ok);
+    } catch {
+      toast('❌ Server not running', 3000);
+      setStatus(false);
+    }
+  } else {
+    toast('ℹ️ Direct mode: press any button to test', 2500);
+  }
+}
+
+// ── Network scan ─────────────────────────────────────────────────────────
+async function scanForTVs() {
+  const btn     = document.getElementById('scanBtn');
+  const results = document.getElementById('scanResults');
+
+  if (!S.serverMode) {
+    results.innerHTML = '<div class="scan-msg">⚠️ Enable <strong>Server Mode</strong> above to use network scan.</div>';
+    return;
+  }
+
+  btn.disabled  = true;
+  btn.innerHTML = '<span class="spin">⟳</span> Scanning network…';
+  results.innerHTML = '<div class="scan-msg">🔎 Probing your network — this takes ~10 seconds…</div>';
+
+  try {
+    const r = await fetch('/api/scan', { signal: AbortSignal.timeout(90000) });
+    const d = await r.json();
+
+    if (!d.ok) throw new Error(d.error || 'Scan failed');
+
+    if (!d.tvs.length) {
+      results.innerHTML = '<div class="scan-msg">No Panasonic TVs found.<br>Make sure the TV is <strong>on</strong> and connected to WiFi.</div>';
+    } else {
+      results.innerHTML = d.tvs.map((tv) =>
+        `<button class="tv-item" onclick="selectTV('${tv.ip}', '${tv.name.replace(/'/g, '\\\'')}')" type="button">
+          <span class="tv-item-icon">📺</span>
+          <span class="tv-item-info">
+            <span class="tv-item-name">${tv.name}</span>
+            <span class="tv-item-ip">${tv.ip}</span>
+          </span>
+          <span class="tv-item-arrow">›</span>
+        </button>`
+      ).join('');
+    }
+  } catch {
+    results.innerHTML = '<div class="scan-msg">❌ Scan failed — is <code>panasonic_server.js</code> running?</div>';
+  } finally {
+    btn.disabled  = false;
+    btn.innerHTML = '🔍 Scan Network for TVs';
+  }
+}
+
+function selectTV(ip, name) {
+  document.getElementById('tvIp').value = ip;
+  document.getElementById('scanResults').innerHTML =
+    `<div class="scan-msg">✅ Selected: <strong>${name}</strong> (${ip})</div>`;
+  toast(`Selected: ${name}`);
+}
+
+// ── Settings modal ────────────────────────────────────────────────────────
+function openSettings()  { document.getElementById('overlay').classList.add('open'); }
+function closeSettings() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('scanResults').innerHTML = '';
+  document.getElementById('scanBtn').disabled = false;
+  document.getElementById('scanBtn').innerHTML = '🔍 Scan Network for TVs';
+}
+function overlayClick(e) { if (e.target === document.getElementById('overlay')) closeSettings(); }
+
+// ── Service Worker registration ───────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {/* non-critical */});
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────
+loadSettings();
+if (!S.ip) setTimeout(openSettings, 600);
+</script>
+</body>
+</html>

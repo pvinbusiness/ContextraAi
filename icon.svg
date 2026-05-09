@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- App background -->
+  <rect width="512" height="512" rx="108" fill="#0d1117"/>
+
+  <!-- Remote body -->
+  <rect x="148" y="54" width="216" height="404" rx="72" fill="#1c1c1e" stroke="#2c2c2e" stroke-width="3"/>
+
+  <!-- Power button glow -->
+  <circle cx="256" cy="150" r="52" fill="#ff3b30" opacity=".18"/>
+  <!-- Power button -->
+  <circle cx="256" cy="150" r="38" fill="#ff3b30"/>
+  <!-- Power symbol: vertical bar -->
+  <rect x="250" y="128" width="12" height="28" rx="6" fill="white"/>
+  <!-- Power symbol: arc -->
+  <path d="M224 145 A40 40 0 1 0 288 145" stroke="white" stroke-width="9"
+        stroke-linecap="round" fill="none"/>
+
+  <!-- D-pad outer ring -->
+  <circle cx="256" cy="300" r="68" fill="#252528"/>
+  <!-- D-pad arrows (triangles) -->
+  <!-- Up -->
+  <polygon points="256,242 243,262 269,262" fill="#48484a"/>
+  <!-- Down -->
+  <polygon points="256,358 243,338 269,338" fill="#48484a"/>
+  <!-- Left -->
+  <polygon points="198,300 218,287 218,313" fill="#48484a"/>
+  <!-- Right -->
+  <polygon points="314,300 294,287 294,313" fill="#48484a"/>
+  <!-- OK center -->
+  <circle cx="256" cy="300" r="28" fill="#0062c0"/>
+
+  <!-- Button row at bottom -->
+  <rect x="178" y="402" width="46" height="22" rx="7" fill="#252528"/>
+  <rect x="233" y="402" width="46" height="22" rx="7" fill="#252528"/>
+  <rect x="288" y="402" width="46" height="22" rx="7" fill="#252528"/>
+
+  <!-- Side volume notches (left side) -->
+  <rect x="140" y="228" width="16" height="10" rx="5" fill="#2c2c2e"/>
+  <rect x="140" y="248" width="16" height="10" rx="5" fill="#2c2c2e"/>
+  <rect x="140" y="268" width="16" height="10" rx="5" fill="#2c2c2e"/>
+</svg>
