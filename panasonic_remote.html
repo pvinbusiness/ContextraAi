@@ -322,6 +322,41 @@
       color:#90caf9;line-height:1.6;
     }
     .info-card strong{color:#bbdefb}
+
+    /* ── Scan UI ── */
+    .btn-scan{
+      width:100%;background:var(--surface);
+      color:var(--text);border:1px solid var(--border);
+      padding:13px;border-radius:13px;
+      font-size:14px;font-weight:500;
+      cursor:pointer;margin-top:8px;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      transition:background .15s;
+    }
+    .btn-scan:active{background:var(--surface2)}
+    .btn-scan:disabled{opacity:.5;cursor:not-allowed}
+    .scan-results{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+    .tv-item{
+      display:flex;align-items:center;gap:12px;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:13px;padding:12px 14px;
+      cursor:pointer;width:100%;text-align:left;
+      transition:background .12s;
+    }
+    .tv-item:active{background:var(--surface2)}
+    .tv-item-icon{font-size:22px;flex-shrink:0}
+    .tv-item-info{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+    .tv-item-name{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tv-item-ip{font-size:11px;color:var(--muted);font-family:monospace}
+    .tv-item-arrow{font-size:20px;color:var(--muted);flex-shrink:0}
+    .scan-msg{
+      font-size:12px;color:var(--muted);
+      text-align:center;padding:12px;
+      background:var(--surface);border-radius:12px;
+      border:1px solid var(--border);
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{display:inline-block;animation:spin 1s linear infinite}
   </style>
 </head>
 <body>
@@ -491,6 +526,11 @@
         autocorrect="off">
       <div class="form-hint">Find it in your TV: Settings → Network → Network Status</div>
     </div>
+
+    <button class="btn-scan" id="scanBtn" onclick="scanForTVs()">
+      🔍 Scan Network for TVs
+    </button>
+    <div class="scan-results" id="scanResults"></div>
 
     <div class="toggle-row">
       <div class="toggle-info">
@@ -675,9 +715,63 @@ async function testConn() {
   }
 }
 
+// ── Network scan ─────────────────────────────────────────────────────────
+async function scanForTVs() {
+  const btn     = document.getElementById('scanBtn');
+  const results = document.getElementById('scanResults');
+
+  if (!S.serverMode) {
+    results.innerHTML = '<div class="scan-msg">⚠️ Enable <strong>Server Mode</strong> above to use network scan.</div>';
+    return;
+  }
+
+  btn.disabled  = true;
+  btn.innerHTML = '<span class="spin">⟳</span> Scanning network…';
+  results.innerHTML = '<div class="scan-msg">🔎 Probing your network — this takes ~10 seconds…</div>';
+
+  try {
+    const r = await fetch('/api/scan', { signal: AbortSignal.timeout(90000) });
+    const d = await r.json();
+
+    if (!d.ok) throw new Error(d.error || 'Scan failed');
+
+    if (!d.tvs.length) {
+      results.innerHTML = '<div class="scan-msg">No Panasonic TVs found.<br>Make sure the TV is <strong>on</strong> and connected to WiFi.</div>';
+    } else {
+      results.innerHTML = d.tvs.map((tv) =>
+        `<button class="tv-item" onclick="selectTV('${tv.ip}', '${tv.name.replace(/'/g, '\\\'')}')" type="button">
+          <span class="tv-item-icon">📺</span>
+          <span class="tv-item-info">
+            <span class="tv-item-name">${tv.name}</span>
+            <span class="tv-item-ip">${tv.ip}</span>
+          </span>
+          <span class="tv-item-arrow">›</span>
+        </button>`
+      ).join('');
+    }
+  } catch {
+    results.innerHTML = '<div class="scan-msg">❌ Scan failed — is <code>panasonic_server.js</code> running?</div>';
+  } finally {
+    btn.disabled  = false;
+    btn.innerHTML = '🔍 Scan Network for TVs';
+  }
+}
+
+function selectTV(ip, name) {
+  document.getElementById('tvIp').value = ip;
+  document.getElementById('scanResults').innerHTML =
+    `<div class="scan-msg">✅ Selected: <strong>${name}</strong> (${ip})</div>`;
+  toast(`Selected: ${name}`);
+}
+
 // ── Settings modal ────────────────────────────────────────────────────────
 function openSettings()  { document.getElementById('overlay').classList.add('open'); }
-function closeSettings() { document.getElementById('overlay').classList.remove('open'); }
+function closeSettings() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('scanResults').innerHTML = '';
+  document.getElementById('scanBtn').disabled = false;
+  document.getElementById('scanBtn').innerHTML = '🔍 Scan Network for TVs';
+}
 function overlayClick(e) { if (e.target === document.getElementById('overlay')) closeSettings(); }
 
 // ── Init ─────────────────────────────────────────────────────────────────

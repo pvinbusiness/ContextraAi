@@ -37,7 +37,7 @@ function buildSoap(command) {
   );
 }
 
-function tvRequest(ip, pathStr, method, body, headers) {
+function tvRequest(ip, pathStr, method, body, headers, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     const payload = body ? Buffer.from(body, 'utf8') : null;
 
@@ -58,7 +58,7 @@ function tvRequest(ip, pathStr, method, body, headers) {
       res.on('end', () => resolve({ status: res.statusCode, body: data }));
     });
 
-    req.setTimeout(5000, () => {
+    req.setTimeout(timeoutMs, () => {
       req.destroy();
       reject(new Error('Timeout'));
     });
@@ -66,6 +66,57 @@ function tvRequest(ip, pathStr, method, body, headers) {
     if (payload) req.write(payload);
     req.end();
   });
+}
+
+// Probe a single IP for a Panasonic TV (short timeout for parallel scanning)
+function checkTV(ip) {
+  return new Promise((resolve) => {
+    const req = http.request(
+      { hostname: ip, port: 55000, path: '/nrc/sdd_0.xml', method: 'GET' },
+      (res) => {
+        let data = '';
+        res.on('data', (c) => (data += c));
+        res.on('end', () => {
+          if (res.statusCode === 200) {
+            const m = data.match(/<friendlyName>([^<]*)<\/friendlyName>/);
+            resolve({ ip, name: m ? m[1].trim() : `Panasonic TV (${ip})` });
+          } else {
+            resolve(null);
+          }
+        });
+      }
+    );
+    req.setTimeout(700, () => { req.destroy(); resolve(null); });
+    req.on('error', () => resolve(null));
+    req.end();
+  });
+}
+
+function getSubnets() {
+  return [...new Set(
+    Object.values(os.networkInterfaces())
+      .flat()
+      .filter((i) => i.family === 'IPv4' && !i.internal)
+      .map((i) => i.address.split('.').slice(0, 3).join('.'))
+  )];
+}
+
+async function scanNetwork() {
+  const subnets = getSubnets();
+  if (!subnets.length) return [];
+  // Scan all subnets (.1–.254) in parallel with concurrency chunks to avoid
+  // overwhelming the OS socket limit on large networks
+  const CHUNK = 50;
+  const found = [];
+  const tasks = subnets.flatMap((subnet) =>
+    Array.from({ length: 254 }, (_, i) => `${subnet}.${i + 1}`)
+  );
+  for (let i = 0; i < tasks.length; i += CHUNK) {
+    const batch = tasks.slice(i, i + CHUNK).map(checkTV);
+    const results = await Promise.all(batch);
+    found.push(...results.filter(Boolean));
+  }
+  return found;
 }
 
 function sendCommand(ip, command) {
@@ -128,6 +179,21 @@ const server = http.createServer(async (req, res) => {
       json(res, 200, { ok: true });
     } catch (err) {
       console.error('[send] error:', err.message);
+      json(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  // ── API: scan network for TVs ─────────────────────────────────────────
+  if (url === '/api/scan' && method === 'GET') {
+    console.log('[scan] Starting network scan…');
+    try {
+      const tvs = await scanNetwork();
+      const summary = tvs.length ? tvs.map((t) => `${t.ip} (${t.name})`).join(', ') : 'none';
+      console.log(`[scan] Found ${tvs.length} TV(s): ${summary}`);
+      json(res, 200, { ok: true, tvs });
+    } catch (err) {
+      console.error('[scan] error:', err.message);
       json(res, 500, { ok: false, error: err.message });
     }
     return;
